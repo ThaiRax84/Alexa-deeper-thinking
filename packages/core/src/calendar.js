@@ -6,13 +6,15 @@ import { DateTime } from "luxon";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
-const SERVER_PATH = fileURLToPath(import.meta.resolve("@deeper-thinking/calendar-mcp"));
+// In a deployed bundle the server is a separate file named by CALENDAR_SERVER_PATH.
+const serverPath = () =>
+  process.env.CALENDAR_SERVER_PATH || fileURLToPath(import.meta.resolve("@deeper-thinking/calendar-mcp"));
 
 /** @returns {Promise<Client>} */
 export async function connectCalendar({ username, appPassword, timezone }) {
   const transport = new StdioClientTransport({
     command: process.execPath,
-    args: [SERVER_PATH],
+    args: [serverPath()],
     // Only what the server needs: the SDK does not forward the parent's full environment.
     env: {
       ICLOUD_USERNAME: username,

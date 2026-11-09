@@ -226,7 +226,13 @@ export function buildSkill(deps) {
       const ready = jobs.find((j) => j.status === "done" && !j.readAt);
       if (ready) {
         await deps.store.markRead(user.userId, ready);
-        const sent = ready.channel !== "voz" ? ` El reporte completo te lo mandé por ${CHANNEL_LABEL[ready.channel]}.` : "";
+        const label = CHANNEL_LABEL[ready.channel];
+        const sent =
+          ready.channel === "voz"
+            ? ""
+            : ready.deliveryError
+              ? ` No pude mandarte el reporte por ${label}. Revisa tus datos en el portal.`
+              : ` El reporte completo te lo mandé por ${label}.`;
         return end(h, `${toSpeech(`Sobre ${ready.topic}: ${ready.summary ?? ""}`, 3000)}${sent}`);
       }
       const running = jobs.find((j) => j.status === "queued" || j.status === "running");

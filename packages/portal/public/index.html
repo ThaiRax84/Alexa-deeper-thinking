@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Deeper Thinking for Alexa</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Deeper Thinking <span>for Alexa</span></h1>
+    <p>Configura tu asistente una sola vez. Después solo háblale a Alexa.</p>
+  </header>
+
+  <main>
+    <section id="login" hidden>
+      <h2>Bienvenido</h2>
+      <p>Usa la misma cuenta con la que vinculaste la skill en la app de Alexa. Si aún no tienes cuenta, puedes crearla aquí.</p>
+      <button id="login-btn" type="button">Iniciar sesión o crear cuenta</button>
+    </section>
+
+    <div id="setup" hidden>
+      <section>
+        <h2><span class="step">1</span> Tu inteligencia artificial</h2>
+        <p class="hint">Elige tu empresa de IA y pega tu llave de API. Elegimos los modelos por ti: uno ligero para responder rápido y uno más capaz para investigar a fondo.</p>
+        <form id="ai-form">
+          <label>Empresa
+            <select id="provider" required></select>
+          </label>
+          <label>Llave de API
+            <input id="api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Pega tu llave aquí" required>
+          </label>
+          <p class="hint" id="key-help"></p>
+          <button type="submit">Guardar y verificar</button>
+          <p class="status" id="ai-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section>
+        <h2><span class="step">2</span> Calendario de Apple <small>(opcional)</small></h2>
+        <p class="hint">Para agendar, Alexa necesita una <strong>contraseña de app</strong> de tu Apple ID (no tu contraseña normal). Créala en <a href="https://account.apple.com" target="_blank" rel="noopener">account.apple.com</a> → Inicio de sesión y seguridad → Contraseñas específicas de apps. Puedes revocarla cuando quieras.</p>
+        <form id="cal-form">
+          <label>Apple ID (correo)
+            <input id="cal-user" type="email" autocomplete="username" required>
+          </label>
+          <label>Contraseña de app
+            <input id="cal-pass" type="password" autocomplete="off" placeholder="xxxx-xxxx-xxxx-xxxx" required>
+          </label>
+          <div class="row">
+            <button type="submit">Conectar calendario</button>
+            <button type="button" id="cal-remove" class="secondary" hidden>Desconectar</button>
+          </div>
+          <p class="status" id="cal-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section>
+        <h2><span class="step">3</span> Entrega y horario</h2>
+        <p class="hint">Las preguntas rápidas se responden por voz. Para investigaciones largas, Alexa te preguntará cómo quieres recibirlas; aquí eliges la opción que te ofrecerá primero.</p>
+        <form id="prefs-form">
+          <fieldset>
+            <legend>Investigaciones largas</legend>
+            <label class="inline"><input type="radio" name="channel" value="voz"> Leérmelas cuando pregunte</label>
+            <label class="inline"><input type="radio" name="channel" value="whatsapp"> WhatsApp</label>
+            <label class="inline"><input type="radio" name="channel" value="correo"> Correo</label>
+          </fieldset>
+          <label>Correo para reportes <small>(si lo dejas vacío, usamos el de tu cuenta de Amazon)</small>
+            <input id="email" type="email" autocomplete="email">
+          </label>
+          <label>WhatsApp con lada <small>(si lo dejas vacío, usamos el de tu cuenta de Amazon)</small>
+            <input id="phone" type="tel" autocomplete="tel" placeholder="+52 55 1234 5678">
+          </label>
+          <label>Zona horaria
+            <select id="timezone"></select>
+          </label>
+          <button type="submit">Guardar</button>
+          <p class="status" id="prefs-status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section>
+        <h2>Tu cuenta</h2>
+        <p class="hint">Prueba diciendo: <em>"Alexa, pídele a deeper thinking que agende dentista el jueves a las cinco"</em>.</p>
+        <div class="row">
+          <button type="button" id="logout" class="secondary">Cerrar sesión</button>
+          <button type="button" id="delete" class="danger">Eliminar mis datos</button>
+        </div>
+        <p class="status" id="account-status" role="status" aria-live="polite"></p>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <a href="/privacidad">Aviso de privacidad</a> · <a href="/terminos">Términos de uso</a>
+  </footer>
+</body>
+</html>

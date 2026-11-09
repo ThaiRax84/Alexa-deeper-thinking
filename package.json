@@ -1,19 +1,26 @@
 {
   "name": "alexa-deeper-thinking",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Agente de voz para Alexa: investiga, responde y agenda en tu calendario con el modelo de IA que elijas",
   "type": "module",
   "workspaces": [
     "packages/calendar-mcp",
     "packages/core",
-    "packages/skill"
+    "packages/aws",
+    "packages/skill",
+    "packages/worker",
+    "packages/portal"
   ],
   "scripts": {
-    "test": "npm test --workspaces --if-present"
+    "test": "npm test --workspaces --if-present",
+    "build": "node scripts/build.mjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.10"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
 }

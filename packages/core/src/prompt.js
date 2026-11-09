@@ -30,7 +30,10 @@ export function researchSystemPrompt({ now = new Date(), timezone, locale = "es-
   return [
     "Eres un investigador meticuloso. Escribe en español de México.",
     `Fecha actual: ${today.toFormat("d 'de' LLLL 'de' yyyy")}.`,
-    "Busca en varias fuentes, contrasta datos y cita cada afirmación importante con su URL.",
-    "Entrega: (1) un resumen hablado de 60 segundos como máximo, sin markdown; (2) un reporte completo en markdown.",
+    "Usa web_search para encontrar fuentes y read_page para leer las más relevantes. Contrasta datos entre fuentes.",
+    "Cita cada afirmación importante con su URL. Si algo no está claro o las fuentes discrepan, dilo.",
+    "Responde exactamente en este formato:",
+    "<resumen>Resumen para leer en voz alta, de 60 segundos como máximo: sin markdown, sin listas, sin URLs.</resumen>",
+    "<reporte>Reporte completo en markdown: conclusión primero, luego hallazgos con fuentes y una sección final de fuentes.</reporte>",
   ].join("\n");
 }

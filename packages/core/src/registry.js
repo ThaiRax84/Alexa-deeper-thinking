@@ -5,9 +5,8 @@
 // their API key, the provider's own model list is fetched and the newest model of
 // each family is chosen. An operator can override any entry (e.g. from S3) without
 // redeploying, and can pin an exact ID per role.
-import { readFileSync } from "node:fs";
-
-const DEFAULTS = JSON.parse(readFileSync(new URL("./registry.json", import.meta.url), "utf8"));
+// A static JSON import, so bundlers inline it into the deployed Lambda.
+import DEFAULTS from "./registry.json" with { type: "json" };
 
 export class ModelResolutionError extends Error {
   constructor(provider, role) {

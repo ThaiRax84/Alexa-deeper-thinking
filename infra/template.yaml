@@ -1,0 +1,301 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Deeper Thinking for Alexa - skill, research worker and setup portal
+
+# Sized for the AWS free tier: provisioned DynamoDB within the always-free 25 RCU/WCU,
+# ARM Lambdas, SSM SecureStrings instead of a KMS key, and 30-day expiry on job data.
+# Build first (npm run build), then deploy with: sam deploy --guided -t infra/template.yaml
+
+Parameters:
+  SkillId:
+    Type: String
+    Description: Alexa skill ID (amzn1.ask.skill.xxxx) from the Alexa developer console
+  CognitoDomainPrefix:
+    Type: String
+    Description: Unique prefix for the sign-in domain (e.g. deeper-thinking-maximo)
+    AllowedPattern: "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+  AlexaRedirectUrls:
+    Type: CommaDelimitedList
+    Description: Alexa Redirect URLs shown in the skill's Account Linking page
+  EmailFrom:
+    Type: String
+    Default: ""
+    Description: SES-verified sender for research emails (empty disables email)
+  WhatsAppPhoneNumberId:
+    Type: String
+    Default: ""
+    Description: WhatsApp Cloud API phone number ID (empty disables WhatsApp)
+  WhatsAppTemplate:
+    Type: String
+    Default: investigacion_lista
+  ConfigName:
+    Type: String
+    Default: deeper-thinking
+    Description: SSM folder /<ConfigName>/ holding master-key, search-api-key and whatsapp-token
+    AllowedPattern: "^[a-zA-Z0-9_.-]+$"
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+    Handler: index.handler
+    Environment:
+      Variables:
+        USERS_TABLE: !Ref UsersTable
+        JOBS_TABLE: !Ref JobsTable
+        CONFIG_PATH: !Sub "/${ConfigName}/"
+        COGNITO_DOMAIN: !Sub "${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com"
+        NODE_OPTIONS: --enable-source-maps
+
+Resources:
+  # ---------- data ----------
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BillingMode: PROVISIONED
+      ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 }
+      AttributeDefinitions:
+        - { AttributeName: userId, AttributeType: S }
+      KeySchema:
+        - { AttributeName: userId, KeyType: HASH }
+
+  JobsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PROVISIONED
+      ProvisionedThroughput: { ReadCapacityUnits: 5, WriteCapacityUnits: 5 }
+      AttributeDefinitions:
+        - { AttributeName: userId, AttributeType: S }
+        - { AttributeName: sk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: userId, KeyType: HASH }
+        - { AttributeName: sk, KeyType: RANGE }
+      TimeToLiveSpecification: { AttributeName: expiresAt, Enabled: true }
+
+  ReportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      LifecycleConfiguration:
+        Rules:
+          - { Id: expire-reports, Status: Enabled, ExpirationInDays: 30 }
+
+  JobsDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600
+
+  JobsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 5400 # 6x the worker timeout, as AWS recommends
+      MessageRetentionPeriod: 86400
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt JobsDeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  # ---------- accounts (Alexa account linking + portal sign-in) ----------
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - { Name: verified_email, Priority: 1 }
+      Policies:
+        PasswordPolicy: { MinimumLength: 10, RequireLowercase: true, RequireNumbers: true, RequireUppercase: false, RequireSymbols: false }
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref CognitoDomainPrefix
+      UserPoolId: !Ref UserPool
+      ManagedLoginVersion: 2 # managed login pages, available in Spanish with ?lang=es
+
+  AlexaClientBranding:
+    Type: AWS::Cognito::ManagedLoginBranding
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientId: !Ref AlexaClient
+      UseCognitoProvidedValues: true
+
+  PortalClientBranding:
+    Type: AWS::Cognito::ManagedLoginBranding
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientId: !Ref PortalClient
+      UseCognitoProvidedValues: true
+
+  AlexaClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      GenerateSecret: true
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows: [code]
+      AllowedOAuthScopes: [openid, email]
+      SupportedIdentityProviders: [COGNITO]
+      CallbackURLs: !Ref AlexaRedirectUrls
+      AccessTokenValidity: 60
+      RefreshTokenValidity: 3650
+      TokenValidityUnits: { AccessToken: minutes, RefreshToken: days }
+      PreventUserExistenceErrors: ENABLED
+
+  PortalClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      AllowedOAuthFlowsUserPoolClient: true
+      AllowedOAuthFlows: [code]
+      AllowedOAuthScopes: [openid, email]
+      SupportedIdentityProviders: [COGNITO]
+      CallbackURLs: [!GetAtt PortalFunctionUrl.FunctionUrl]
+      LogoutURLs: [!GetAtt PortalFunctionUrl.FunctionUrl]
+      AccessTokenValidity: 60
+      TokenValidityUnits: { AccessToken: minutes }
+      PreventUserExistenceErrors: ENABLED
+
+  # Read by the portal at runtime (avoids a dependency cycle with its own URL).
+  PortalClientIdParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${ConfigName}/portal-client-id"
+      Type: String
+      Value: !Ref PortalClient
+
+  # ---------- functions ----------
+  SkillFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist/skill
+      MemorySize: 1024 # more CPU: faster cold starts inside Alexa's 8 s window
+      Timeout: 10
+      Environment:
+        Variables:
+          SKILL_ID: !Ref SkillId
+          PORTAL_URL: !GetAtt PortalFunctionUrl.FunctionUrl
+          JOBS_QUEUE_URL: !Ref JobsQueue
+          CALENDAR_SERVER_PATH: /var/task/calendar-server.mjs
+      Events:
+        Alexa:
+          Type: AlexaSkill
+          Properties:
+            SkillId: !Ref SkillId
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref UsersTable }
+        - DynamoDBCrudPolicy: { TableName: !Ref JobsTable }
+        - SQSSendMessagePolicy: { QueueName: !GetAtt JobsQueue.QueueName }
+        - Statement:
+            - Effect: Allow
+              Action: ssm:GetParametersByPath
+              Resource: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigName}*"
+            - Effect: Allow
+              Action: kms:Decrypt
+              Resource: "*"
+              Condition:
+                StringEquals:
+                  kms:ViaService: !Sub "ssm.${AWS::Region}.amazonaws.com"
+
+  WorkerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist/worker
+      MemorySize: 512
+      Timeout: 900
+      Environment:
+        Variables:
+          REPORTS_BUCKET: !Ref ReportsBucket
+          EMAIL_FROM: !Ref EmailFrom
+          WHATSAPP_PHONE_NUMBER_ID: !Ref WhatsAppPhoneNumberId
+          WHATSAPP_TEMPLATE: !Ref WhatsAppTemplate
+      Events:
+        Jobs:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt JobsQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes: [ReportBatchItemFailures]
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref UsersTable }
+        - DynamoDBCrudPolicy: { TableName: !Ref JobsTable }
+        - S3CrudPolicy: { BucketName: !Ref ReportsBucket }
+        - Statement:
+            - Effect: Allow
+              Action: ses:SendEmail
+              Resource: "*"
+        - Statement:
+            - Effect: Allow
+              Action: ssm:GetParametersByPath
+              Resource: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigName}*"
+            - Effect: Allow
+              Action: kms:Decrypt
+              Resource: "*"
+              Condition:
+                StringEquals:
+                  kms:ViaService: !Sub "ssm.${AWS::Region}.amazonaws.com"
+
+  PortalFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../dist/portal
+      MemorySize: 512
+      Timeout: 30
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+          PUBLIC_DIR: /var/task/public
+          CALENDAR_SERVER_PATH: /var/task/calendar-server.mjs
+      FunctionUrlConfig:
+        AuthType: NONE
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref UsersTable }
+        - DynamoDBCrudPolicy: { TableName: !Ref JobsTable }
+        - Statement:
+            - Effect: Allow
+              Action: ssm:GetParametersByPath
+              Resource: !Sub "arn:${AWS::Partition}:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${ConfigName}*"
+            - Effect: Allow
+              Action: kms:Decrypt
+              Resource: "*"
+              Condition:
+                StringEquals:
+                  kms:ViaService: !Sub "ssm.${AWS::Region}.amazonaws.com"
+
+  # Public function URLs also need lambda:InvokeFunction scoped to URL invocations.
+  PortalInvokeViaUrl:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PortalFunction
+      Action: lambda:InvokeFunction
+      Principal: "*"
+      InvokedViaFunctionUrl: true
+
+Outputs:
+  PortalUrl:
+    Description: Setup portal (also the privacy policy at /privacidad and terms at /terminos)
+    Value: !GetAtt PortalFunctionUrl.FunctionUrl
+  SkillFunctionArn:
+    Description: Paste into the skill's Endpoint (Default Region)
+    Value: !GetAtt SkillFunction.Arn
+  AccountLinkingAuthorizationUri:
+    Value: !Sub "https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com/oauth2/authorize?lang=es"
+  AccountLinkingAccessTokenUri:
+    Value: !Sub "https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com/oauth2/token"
+  AccountLinkingClientId:
+    Value: !Ref AlexaClient
+  AccountLinkingClientSecretCommand:
+    Description: Run this to read the client secret for Account Linking
+    Value: !Sub "aws cognito-idp describe-user-pool-client --user-pool-id ${UserPool} --client-id ${AlexaClient} --query UserPoolClient.ClientSecret --output text"

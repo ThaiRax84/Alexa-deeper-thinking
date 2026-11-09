@@ -16,35 +16,36 @@ Diseño completo y decisiones: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 ```
 packages/core           agente, proveedores de IA, registro de modelos, herramientas
 packages/calendar-mcp   servidor MCP de Apple Calendar (CalDAV)
+packages/aws            DynamoDB, S3, SQS, SSM y cifrado compartidos
 packages/skill          skill de Alexa: modelo de interacción es-MX, manifiesto y Lambda
-docs/                   arquitectura
+packages/worker         investigación profunda y entrega (voz, correo, WhatsApp)
+packages/portal         portal de configuración, aviso de privacidad y términos
+infra/                  plantilla AWS SAM
+scripts/build.mjs       empaqueta cada Lambda con esbuild
+docs/                   arquitectura y guía de despliegue
 ```
 
 ## Desarrollo
 
-Requiere Node.js 20+.
+Requiere Node.js 20.10+ (22 recomendado).
 
 ```bash
 npm install
 npm test
 ```
 
-## Variables de entorno (Lambda de la skill)
+## Despliegue
 
-| Variable | Descripción |
-| --- | --- |
-| `SKILL_ID` | ID de la skill en la consola de Alexa |
-| `USERS_TABLE`, `JOBS_TABLE` | Tablas de DynamoDB |
-| `JOBS_QUEUE_URL` | Cola SQS de investigaciones |
-| `COGNITO_DOMAIN` | Dominio del user pool usado para vincular cuentas |
-| `PORTAL_URL` | Portal de configuración |
-| `SEARCH_API_KEY` | Llave de Tavily para búsquedas rápidas |
-| `AGENT_DEADLINE_MS` | Presupuesto de tiempo por turno de voz (por defecto 6000) |
-| `MODEL_REGISTRY_JSON` | Opcional: ajustes al registro de modelos |
+```bash
+npm run build
+sam deploy --guided -t infra/template.yaml
+```
+
+Paso a paso (AWS, consola de Alexa, correo y WhatsApp): [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Estado
 
-Versión 0.1: núcleo del agente, calendario y skill con pruebas. Siguiente: worker de investigación, portal e infraestructura. Ver la sección *Pendiente* de la arquitectura.
+Versión 0.2: skill, worker de investigación, portal e infraestructura listos para desplegar. Pendientes en la sección *Pendiente* de la arquitectura.
 
 ## Licencia
 
