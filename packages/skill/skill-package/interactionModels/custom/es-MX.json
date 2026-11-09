@@ -1,0 +1,97 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "deeper thinking",
+      "intents": [
+        {
+          "name": "AgentIntent",
+          "slots": [{ "name": "query", "type": "AMAZON.SearchQuery" }],
+          "samples": [
+            "investiga {query}",
+            "investigue {query}",
+            "investígame {query}",
+            "busca {query}",
+            "busque {query}",
+            "averigua {query}",
+            "averigüe {query}",
+            "agenda {query}",
+            "agende {query}",
+            "agrega {query}",
+            "agregue {query}",
+            "añade {query}",
+            "añada {query}",
+            "pon en mi calendario {query}",
+            "ponga en mi calendario {query}",
+            "apunta {query}",
+            "apunte {query}",
+            "recuérdame {query}",
+            "me recuerde {query}",
+            "borra {query}",
+            "borre {query}",
+            "elimina {query}",
+            "elimine {query}",
+            "cancela el evento {query}",
+            "qué tengo {query}",
+            "busca un hueco {query}",
+            "dime {query}",
+            "me diga {query}",
+            "explícame {query}",
+            "me explique {query}",
+            "pregunta {query}",
+            "quiero saber {query}",
+            "necesito saber {query}"
+          ]
+        },
+        {
+          "name": "ChannelIntent",
+          "slots": [{ "name": "canal", "type": "CANAL" }],
+          "samples": [
+            "{canal}",
+            "por {canal}",
+            "mándamelo por {canal}",
+            "envíamelo por {canal}",
+            "mándalo por {canal}",
+            "envíalo por {canal}",
+            "prefiero {canal}",
+            "prefiero por {canal}",
+            "usa {canal}",
+            "a mi {canal}"
+          ]
+        },
+        {
+          "name": "ResultsIntent",
+          "slots": [],
+          "samples": [
+            "mis resultados",
+            "dame mis resultados",
+            "lee mis resultados",
+            "léeme mis resultados",
+            "qué encontraste",
+            "qué averiguaste",
+            "cómo va mi investigación",
+            "ya terminaste",
+            "lee la investigación",
+            "dime lo que encontraste"
+          ]
+        },
+        { "name": "AMAZON.YesIntent", "samples": [] },
+        { "name": "AMAZON.NoIntent", "samples": [] },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.FallbackIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] }
+      ],
+      "types": [
+        {
+          "name": "CANAL",
+          "values": [
+            { "id": "voz", "name": { "value": "voz", "synonyms": ["en voz alta", "léemelo", "aquí", "por aquí", "dímelo"] } },
+            { "id": "whatsapp", "name": { "value": "WhatsApp", "synonyms": ["wasap", "guasap", "whats", "mensaje", "mi celular", "teléfono"] } },
+            { "id": "correo", "name": { "value": "correo", "synonyms": ["correo electrónico", "email", "mail", "e-mail", "imeil"] } }
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@deeper-thinking/skill",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Alexa custom skill: voice front end for the agent core",
+  "type": "module",
+  "main": "lambda/index.js",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1164.0",
+    "@aws-sdk/client-kms": "^3.1164.0",
+    "@aws-sdk/client-sqs": "^3.1164.0",
+    "@aws-sdk/lib-dynamodb": "^3.1164.0",
+    "@deeper-thinking/core": "0.1.0",
+    "ask-sdk-core": "^2.14.0",
+    "ask-sdk-model": "^1.86.0"
+  }
+}

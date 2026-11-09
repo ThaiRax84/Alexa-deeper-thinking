@@ -1,0 +1,49 @@
+{
+  "manifest": {
+    "publishingInformation": {
+      "locales": {
+        "es-MX": {
+          "name": "Deeper Thinking for Alexa",
+          "summary": "Investiga a fondo, responde y agenda en tu calendario con el modelo de IA que tú elijas.",
+          "description": "Deeper Thinking conecta Alexa con tu propio proveedor de inteligencia artificial.\n\nPídele que investigue un tema: las preguntas rápidas las responde al momento y las investigaciones largas te las lee cuando preguntes o te las manda por WhatsApp o correo.\n\nTambién agrega, consulta y borra eventos de tu calendario de Apple (iCloud). Antes de borrar algo siempre te pide confirmación.\n\nPara empezar, vincula tu cuenta, elige tu empresa de IA y pega tu llave de API en el portal.",
+          "examplePhrases": [
+            "Alexa, pídele a deeper thinking que investigue las ventajas de los paneles solares",
+            "Alexa, pídele a deeper thinking que agende dentista el jueves a las cinco",
+            "Alexa, pídele a deeper thinking mis resultados"
+          ],
+          "keywords": ["investigación", "calendario", "agenda", "inteligencia artificial", "asistente", "IA"],
+          "smallIconUri": "https://REPLACE_ME/icon-108.png",
+          "largeIconUri": "https://REPLACE_ME/icon-512.png"
+        }
+      },
+      "isAvailableWorldwide": false,
+      "distributionCountries": ["MX"],
+      "testingInstructions": "Vincula la cuenta de prueba indicada en las notas de certificación. Ejemplos: 'investiga qué es la fotosíntesis', 'agenda junta mañana a las diez', 'borra la junta de mañana' (pide confirmación).",
+      "category": "PRODUCTIVITY"
+    },
+    "privacyAndCompliance": {
+      "allowsPurchases": false,
+      "usesPersonalInfo": true,
+      "isChildDirected": false,
+      "isExportCompliant": true,
+      "containsAds": false,
+      "locales": {
+        "es-MX": {
+          "privacyPolicyUrl": "https://REPLACE_ME/privacidad",
+          "termsOfUseUrl": "https://REPLACE_ME/terminos"
+        }
+      }
+    },
+    "apis": {
+      "custom": {
+        "endpoint": { "uri": "REPLACE_WITH_LAMBDA_ARN" },
+        "interfaces": []
+      }
+    },
+    "permissions": [
+      { "name": "alexa::profile:email:read" },
+      { "name": "alexa::profile:mobile_number:read" }
+    ],
+    "manifestVersion": "1.0"
+  }
+}

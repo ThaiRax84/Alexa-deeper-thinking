@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "notes": "Families, not exact model IDs: the newest available model of each family is chosen from the provider's own model list, so new releases are picked up without a deploy. Use 'pinned' to force an ID.",
+  "exclude": [
+    "embed", "image", "imagen", "tts", "audio", "transcribe", "whisper", "realtime", "live",
+    "search", "moderation", "codex", "veo", "gemma", "aqa", "learnlm", "robotics", "computer-use", "dall-e"
+  ],
+  "providers": {
+    "anthropic": {
+      "label": "Anthropic",
+      "api": "anthropic",
+      "baseUrl": "https://api.anthropic.com",
+      "fast": { "include": ["haiku"] },
+      "deep": { "include": ["opus"] },
+      "pinned": {}
+    },
+    "openai": {
+      "label": "OpenAI",
+      "api": "openai-compatible",
+      "baseUrl": "https://api.openai.com/v1",
+      "maxTokensParam": "max_completion_tokens",
+      "fast": { "include": ["luna", "mini", "nano"] },
+      "deep": { "include": ["sol", "astra"], "exclude": ["cyber", "law"] },
+      "pinned": {}
+    },
+    "google": {
+      "label": "Google Gemini",
+      "api": "openai-compatible",
+      "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+      "fast": { "include": ["flash"], "exclude": ["lite", "thinking"] },
+      "deep": { "include": ["pro"] },
+      "pinned": {}
+    }
+  }
+}
